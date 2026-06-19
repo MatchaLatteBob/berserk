@@ -1,0 +1,21 @@
+- name: Compile Berserk AVX2 (with PGO)
+        run: |
+          # If src folder exists, go into it. Otherwise, stay in root.
+          if [ -d "src" ]; then
+            cd src
+          fi
+          
+          # Run the compilation
+          make pgo CC=clang ARCH=avx2
+
+      - name: Prepare Binary Asset
+        run: |
+          mkdir -p build
+          # Find where the compiled 'berserk' binary ended up and move it
+          if [ -f "src/berserk" ]; then
+            mv src/berserk build/berserk-avx2-linux
+          elif [ -f "berserk" ]; then
+            mv berserk build/berserk-avx2-linux
+          else
+            echo "Error: Berserk binary not found after compilation!" && exit 1
+          fi
