@@ -1,39 +1,21 @@
-name: Compile & Release Berserk AVX2
-
-on:
-  workflow_dispatch: # This is the magic line that creates the clickable button!
-
-jobs:
-  build-and-release:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write # Needed so the action can create the release page
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install Dependencies
+- name: Compile Berserk AVX2 (with PGO)
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential clang
-
-      - name: Compile Berserk AVX2 (with PGO)
-        run: |
-          cd src
+          # If src folder exists, go into it. Otherwise, stay in root.
+          if [ -d "src" ]; then
+            cd src
+          fi
+          
+          # Run the compilation
           make pgo CC=clang ARCH=avx2
 
       - name: Prepare Binary Asset
         run: |
           mkdir -p build
-          mv src/berserk build/berserk-avx2-linux
-
-      - name: Create Automatic Release & Upload Asset
-        uses: softprops/action-gh-release@v3
-        with:
-          files: build/berserk-avx2-linux
-          tag_name: click-build-${{ github.run_number }}
-          name: Berserk AVX2 Manual Build #${{ github.run_number }}
-          body: "This binary was compiled on demand via GitHub Actions manual trigger."
-          draft: false
-          prerelease: false
+          # Find where the compiled 'berserk' binary ended up and move it
+          if [ -f "src/berserk" ]; then
+            mv src/berserk build/berserk-avx2-linux
+          elif [ -f "berserk" ]; then
+            mv berserk build/berserk-avx2-linux
+          else
+            echo "Error: Berserk binary not found after compilation!" && exit 1
+          fi
