@@ -1,0 +1,57 @@
+name: Build Berserk Engine
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  build:
+    name: Build ${{ matrix.arch }}
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        # Define all the binary types you want to generate
+        include:
+          - arch: x86-64
+            suffix: generic
+          - arch: sse41
+            suffix: sse41
+          - arch: avx2
+            suffix: avx2
+          - arch: pext
+            suffix: pext
+          - arch: avx512
+            suffix: avx512
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential clang
+
+      - name: Compile Berserk with PGO
+        run: |
+          cd src
+          # Berserk recommends using Clang and PGO (Profile Guided Optimization)
+          # Note: If the runner's CPU doesn't support the target architecture (like avx512),
+          # regular 'make pgo' might fail during the benchmarking step. 
+          # If it fails, fallback to standard 'make' without PGO for high-end architectures:
+          make pgo CC=clang ARCH=${{ matrix.arch }} || make CC=clang ARCH=${{ matrix.arch }}
+
+      - name: Rename Binary
+        run: |
+          mv src/berserk src/berserk-${{ matrix.suffix }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: berserk-${{ matrix.suffix }}
+          path: src/berserk-${{ matrix.suffix }}
