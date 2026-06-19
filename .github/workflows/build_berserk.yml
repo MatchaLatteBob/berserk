@@ -1,15 +1,13 @@
-name: Release Berserk AVX2
+name: Compile & Release Berserk AVX2
 
 on:
-  push:
-    tags:
-      - 'v*' # Triggers whenever you push a tag like v1.0, v15.0, etc.
+  workflow_dispatch: # This is the magic line that creates the clickable button!
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Crucial permission allowing GitHub to create the release
+      contents: write # Needed so the action can create the release page
 
     steps:
       - name: Checkout Repository
@@ -28,13 +26,14 @@ jobs:
       - name: Prepare Binary Asset
         run: |
           mkdir -p build
-          # Rename the compiled binary to clearly mark it as AVX2
           mv src/berserk build/berserk-avx2-linux
 
-      - name: Create GitHub Release and Upload Binary
-        uses: softprops/action-gh-release@v2
+      - name: Create Automatic Release & Upload Asset
+        uses: softprops/action-gh-release@v3
         with:
           files: build/berserk-avx2-linux
-          name: Berserk Release ${{ github.ref_name }}
+          tag_name: click-build-${{ github.run_number }}
+          name: Berserk AVX2 Manual Build #${{ github.run_number }}
+          body: "This binary was compiled on demand via GitHub Actions manual trigger."
           draft: false
           prerelease: false
